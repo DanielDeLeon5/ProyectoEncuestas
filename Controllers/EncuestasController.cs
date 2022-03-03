@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Encuestas.Entities;
 using Encuestas.Services;
+using System.Collections;
 
 namespace Encuestas.Controllers
 {
@@ -30,17 +31,26 @@ namespace Encuestas.Controllers
         }
 
         // GET: api/Encuestas/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Encuesta>> GetEncuesta(int id)
+        [HttpGet("{link}")]
+        public IList GetEncuesta(string link)
         {
-            var encuesta = await _context.Encuesta.FindAsync(id);
 
-            if (encuesta == null)
+            var encuesta = _context.Encuesta.Where(e => e.Link == link).ToList();
+
+            if (encuesta.Count == 0)
             {
-                return NotFound();
+                return encuesta;
             }
+            var data = (from e in encuesta
+                        join c in _context.CampoEncuestas on e.Id equals c.IdEncuesta
+                        select new
+                        {
+                            nombreEncuesta = e.Nombre,
+                            Campo = c.Titulo
+                        }).ToList();
 
-            return encuesta;
+
+            return data;
         }
 
         // PUT: api/Encuestas/5
