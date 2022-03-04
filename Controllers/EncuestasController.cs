@@ -30,7 +30,8 @@ namespace Encuestas.Controllers
             return await _context.Encuesta.ToListAsync();
         }
 
-        // GET: api/Encuestas/5
+        /// Retorna los campos a llenar segun el Link de la encuesta
+        // GET: api/Encuestas/link
         [HttpGet("{link}")]
         public IList GetEncuesta(string link)
         {
@@ -46,7 +47,34 @@ namespace Encuestas.Controllers
                         select new
                         {
                             nombreEncuesta = e.Nombre,
-                            Campo = c.Titulo
+                            Campo = c.Titulo,
+                            Tipo = c.Tipo
+                        }).ToList();
+
+
+            return data;
+        }
+
+        // GET: api/Encuestas/GetResultados/link
+        [HttpGet("GetResultados")]
+        public IList GetEncuesta2(string link)
+        {
+
+            var encuesta = _context.Encuesta.Where(e => e.Link == link).ToList();
+
+            if (encuesta.Count == 0)
+            {
+                return encuesta;
+            }
+            var data = (from e in encuesta
+                        join c in _context.CampoEncuestas on e.Id equals c.IdEncuesta
+                        join v in _context.ValorCampo on c.Id equals v.IdCampoEncuesta
+                        select new
+                        {
+                            nombreEncuesta = e.Nombre,
+                            Campo = c.Titulo,
+                            Valor = v.Valor
+                            
                         }).ToList();
 
 
@@ -89,9 +117,12 @@ namespace Encuestas.Controllers
         [HttpPost]
         public async Task<ActionResult<Encuesta>> PostEncuesta(EncuestaPost encuesta)
         {
+            /// Se crea el link de la encuesta
             encuesta.Encuesta.Link = setURL();
+
             _context.Encuesta.Add(encuesta.Encuesta);
             await _context.SaveChangesAsync();
+            /// Recorre los campos ingresados para guardarlos y asociarlos a la encuesta
             foreach(var campo in encuesta.CampoEncuestas)
             {
                 campo.IdEncuesta = encuesta.Encuesta.Id;
@@ -122,6 +153,7 @@ namespace Encuestas.Controllers
             return _context.Encuesta.Any(e => e.Id == id);
         }
 
+        /// Crea el link de la encuesta
         private string setURL()
         {
             var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -133,7 +165,7 @@ namespace Encuestas.Controllers
             {
                 link[i] = characters[random.Next(characters.Length)];
             }
-
+            /// Verifica si existe el link
             var Encuestas = new Encuesta();
             if(_context.Encuesta.Any(e => e.Link == Convert.ToString(link)))
             {

@@ -43,6 +43,7 @@ namespace Encuestas.Controllers
             return valorCampo;
         }
 
+
         // PUT: api/ValorCampoes/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
@@ -77,12 +78,23 @@ namespace Encuestas.Controllers
         // POST: api/ValorCampoes
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<ValorCampo>> PostValorCampo(ValorCampo valorCampo)
+        public async Task<ActionResult<ValorCampo>> PostValorCampo(ValorCampoEncuesta valores)
         {
-            _context.ValorCampo.Add(valorCampo);
+            /// Encuentra los campos a ingresar relacionados a esa encuesta
+            int idEncuesta = valores.idEncuesta;
+            var campos = (from c in _context.CampoEncuestas
+                         where c.IdEncuesta == idEncuesta
+                         select c).ToList();
+            /// Recorre los campos y le asigna el id al valor ingresado
+            for(int i = 0; i < campos.Count; i++)
+            {
+                valores.valorCampo[i].IdCampoEncuesta = campos[i].Id;
+                _context.ValorCampo.Add(valores.valorCampo[i]);
+                await _context.SaveChangesAsync();
+            }
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetValorCampo", new { id = valorCampo.Id }, valorCampo);
+            return CreatedAtAction("GetValorCampo", new { valores.valorCampo }, valores.valorCampo);
         }
 
         // DELETE: api/ValorCampoes/5
